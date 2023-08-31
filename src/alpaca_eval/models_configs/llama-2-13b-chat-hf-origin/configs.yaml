@@ -1,4 +1,4 @@
-llama-2-13b-chat-hf:
+llama-2-13b-chat-hf-origin:
   prompt_template: "llama-2-7b-chat-hf/prompt.txt"
   fn_completions: "huggingface_local_completions"
   completions_kwargs:
@@ -11,4 +11,4 @@ llama-2-13b-chat-hf:
     do_sample: True
     batch_size: 16
   pretty_name: "LLaMA2 Chat 13B"
-  link: "https://ai.meta.com/llama/"
+  link: "https://huggingface.co/meta-llama/Llama-2-13b-chat-hf"

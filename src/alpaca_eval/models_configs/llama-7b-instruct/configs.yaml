@@ -1,0 +1,13 @@
+llama-7b-instruct:
+  prompt_template: "llama-7b-instruct/prompt.txt"
+  fn_completions: "huggingface_local_completions"
+  completions_kwargs:
+    model_name: "VMware/open-llama-7b-v2-open-instruct" # local path
+    model_kwargs:
+      torch_dtype: 'bfloat16'
+    max_new_tokens: 2048
+    temperature: 0.8
+    top_p: 0.95
+    do_sample: True
+  pretty_name: "LLaMA Instrcut 7B"
+  link: "https://huggingface.co/VMware/open-llama-7b-v2-open-instruct"

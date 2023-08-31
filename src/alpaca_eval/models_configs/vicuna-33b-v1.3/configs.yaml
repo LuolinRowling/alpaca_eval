@@ -9,5 +9,6 @@ vicuna-33b-v1.3:
     temperature: 0.7
     top_p: 1.0
     do_sample: True
+    batch_size: 4
   pretty_name: "Vicuna 33B v1.3"
   link: "https://huggingface.co/lmsys/vicuna-33b-v1.3"
