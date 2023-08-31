@@ -18,7 +18,7 @@ def huggingface_api_completions(
     model_name: str,
     gpu: bool = False,
     do_sample: bool = False,
-    num_procs: int = 1,
+    num_procs: int = 8,
     **kwargs,
 ) -> dict[str, list]:
     """Decode with the API from hugging face hub.

@@ -88,20 +88,20 @@ def huggingface_local_completions(
         use_fast=is_fast_tokenizer,
         **model_kwargs,
     )
-    model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=cache_dir, **model_kwargs).eval()
+    model = AutoModelForCausalLM.from_pretrained(model_name, cache_dir=cache_dir, pretraining_tp = 1, **model_kwargs).eval()
 
     if adapters_name:
         logging.info(f"Merging adapter from {adapters_name}.")
         model = PeftModel.from_pretrained(model, adapters_name)
         model = model.merge_and_unload()
 
-    if batch_size == 1:
-        try:
-            model = model.to_bettertransformer()
-        except NotImplementedError:
-            pass
-        except AttributeError:
-            pass
+    # if batch_size == 1:
+    #     try:
+    #         model = model.to_bettertransformer()
+    #     except NotImplementedError:
+    #         pass
+    #     except AttributeError:
+    #         pass
 
     logging.info(f"Model memory: {model.get_memory_footprint() / 1e9} GB")
 

@@ -565,6 +565,13 @@ class SingleAnnotator:
 
         completions = self.fn_completions(prompts=prompts, **self.completions_kwargs, **decoding_kwargs)
 
+        # TODO: Remove this after the acc test.
+
+        # print("[completions]================")
+        # for c_i in range(len(completions["completions"])):
+        #     print(f"[{c_i}]", repr(completions['completions'][c_i]))
+        # print("=============================")
+
         annotations_to_save, completions_to_save = self._parse_completions(completions=completions["completions"])
         df_to_annotate[self.annotation_column] = annotations_to_save
         if self.completion_column is not None:
@@ -642,15 +649,19 @@ class SingleAnnotator:
         all_completions = []
         for completion in completions:
             try:
-                batch_annotations = self.fn_completion_parser(completion)
-                batch_annotations = list(batch_annotations)
-
-                if len(batch_annotations) != self.batch_size:
-                    logging.warning(
-                        f"Found {len(batch_annotations)} annotations in:'''\n{completion}\n''' but expected"
-                        f" {self.batch_size}. We are setting all annotations to None."
-                    )
+                # TODO: if text == policy error
+                if completion == "Failed by content management policy":
                     batch_annotations = [None] * self.batch_size
+                else:
+                    batch_annotations = self.fn_completion_parser(completion)
+                    batch_annotations = list(batch_annotations)
+
+                    if len(batch_annotations) != self.batch_size:
+                        logging.warning(
+                            f"Found {len(batch_annotations)} annotations in:'''\n{completion}\n''' but expected"
+                            f" {self.batch_size}. We are setting all annotations to None."
+                        )
+                        batch_annotations = [None] * self.batch_size
 
             except Exception as e:
                 logging.exception(f"Error while parsing completion: '''\n{completion}\n'''")

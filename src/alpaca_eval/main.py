@@ -32,6 +32,7 @@ def evaluate(
     max_instances: Optional[int] = None,
     annotation_kwargs: Optional[dict[str, Any]] = None,
     Annotator=annotators.PairwiseAnnotator,
+    region: str = "east-us",
     **annotator_kwargs,
 ):
     """Evaluate a model based on its outputs. This is the default entrypoint if no command is specified.
@@ -109,7 +110,11 @@ def evaluate(
     ):
         raise ValueError(f"current_leaderboard_mode should be one of {constants.ORDERED_LEADERBOARD_MODES}")
 
+    # TODO: Add region print
+    logging.info(f"region: {region}")
+
     annotation_kwargs = annotation_kwargs or dict()
+    annotation_kwargs["region"] = region
 
     leaderboard, precomputed_leaderboard = utils.get_precomputed_leaderboard(
         precomputed_leaderboard, reference_outputs, annotators_config

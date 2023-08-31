@@ -19,6 +19,11 @@ __all__ = ["openai_completions"]
 
 DEFAULT_OPENAI_API_BASE = openai.api_base
 
+class EmptyOpenAIObject(dict):
+    def __init__(self, text, total_tokens):
+        self.text = text
+        self.total_tokens = total_tokens
+        self["total_tokens"] = total_tokens
 
 def openai_completions(
     prompts: Sequence[str],
@@ -110,7 +115,7 @@ def openai_completions(
     is_chat = decoding_kwargs.get("requires_chatml", _requires_chatml(model_name))
     if is_chat:
         prompts = [_prompt_to_chatml(prompt) for prompt in prompts]
-        num_procs = num_procs or 2
+        num_procs = num_procs or 4
         batch_size = batch_size or 1
 
         if batch_size > 1:
@@ -133,6 +138,10 @@ def openai_completions(
 
     kwargs = dict(n=1, model=model_name, is_chat=is_chat, **decoding_kwargs)
     logging.info(f"Kwargs to completion: {kwargs}")
+
+    # TODO: Hard code it to 1
+    # num_procs = 1
+    logging.info("num_procs: " + str(num_procs))
 
     with utils.Timer() as t:
         if num_procs == 1:
@@ -192,15 +201,38 @@ def _openai_completion_helper(
 
     # set api base
     openai.api_base = openai_api_base if openai_api_base is not None else DEFAULT_OPENAI_API_BASE
+    openai.api_type = "azure"
+
+    if "region" in kwargs.keys():
+        region = kwargs["region"]
+    else: 
+        region = "east-us"
+
+    if region == "east-us":
+        openai.api_base = ""
+        openai.api_version = ""
+        openai.api_key = ""
+        # deployment name
+        engine = ""
+    elif region == "france-central":
+        openai.api_base = ""
+        openai.api_version = ""
+        openai.api_key = ""
+        engine = ""
+    else:
+         raise ValueError(f"wrong value in region: {region}.")
 
     # copy shared_kwargs to avoid modifying it
-    kwargs.update(dict(max_tokens=max_tokens, top_p=top_p, temperature=temperature))
+    # kwargs.update(dict(max_tokens=max_tokens, top_p=top_p, temperature=temperature))
+    kwargs.update(dict(max_tokens=max_tokens, top_p=top_p, temperature=temperature, api_key=openai.api_key, api_base=openai.api_base, api_type=openai.api_type, api_version=openai.api_version))
+    del kwargs["region"]
     curr_kwargs = copy.deepcopy(kwargs)
 
     while True:
         try:
             if is_chat:
-                completion_batch = openai.ChatCompletion.create(messages=prompt_batch[0], **curr_kwargs)
+                # completion_batch = openai.ChatCompletion.create(messages=prompt_batch[0], **curr_kwargs)
+                completion_batch = openai.ChatCompletion.create(messages=prompt_batch[0], engine=engine, **curr_kwargs)
 
                 choices = completion_batch.choices
                 for choice in choices:
@@ -223,6 +255,7 @@ def _openai_completion_helper(
             break
         except openai.error.OpenAIError as e:
             logging.warning(f"OpenAIError: {e}.")
+            logging.warning(f"Prompt:{prompt_batch[0][1]}")
             if "Please reduce your prompt" in str(e):
                 kwargs["max_tokens"] = int(kwargs["max_tokens"] * 0.8)
                 logging.warning(f"Reducing target length to {kwargs['max_tokens']}, Retrying...")
@@ -231,7 +264,12 @@ def _openai_completion_helper(
                     raise e
             else:
                 if "rate limit" in str(e).lower():
-                    logging.warning(f"Hit request rate limit; retrying...")
+                    logging.warning("Hit request rate limit; retrying...")
+                elif "content management policy" in str(e):
+                    # TODO: Add the filter here to continue when face azure content management policy.
+                    logging.warning("Failed dut to Azure content management policy on prompt.")
+                    choices = [EmptyOpenAIObject("Failed by content management policy", 1)]
+                    break
                 else:
                     logging.warning(f"Unknown error {e}. \n It's likely a rate limit so we are retrying...")
                 if openai_organization_ids is not None and len(openai_organization_ids) > 1:
